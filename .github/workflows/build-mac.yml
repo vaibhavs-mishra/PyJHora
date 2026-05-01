@@ -1,0 +1,59 @@
+name: Build macOS App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    name: Build macOS arm64
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pyswisseph pyqt6 pyqt6-qt6 pyqt6-sip
+          pip install python-dateutil requests geopy astral ephem skyfield
+
+      - name: List installed packages
+        run: pip list
+
+      - name: Build .app with PyInstaller
+        run: pyinstaller pyjhora.spec
+
+      - name: Test app launches
+        run: |
+          ./dist/PyJHora.app/Contents/MacOS/PyJHora &
+          APP_PID=$!
+          sleep 10
+          if kill -0 $APP_PID 2>/dev/null; then
+            echo "App is running OK"
+            kill $APP_PID
+          else
+            echo "App crashed on launch"
+            exit 1
+          fi
+
+      - name: Zip the .app
+        run: |
+          cd dist
+          zip -r PyJHora-mac-arm64.zip PyJHora.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PyJHora-mac-arm64
+          path: dist/PyJHora-mac-arm64.zip
+          retention-days: 14

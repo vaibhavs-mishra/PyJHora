@@ -65,4 +65,3 @@ app = BUNDLE(
         'CFBundleShortVersionString': '4.6.0',
     },
 )
-EOF
